@@ -41,12 +41,16 @@ final class ViewController: UIViewController {
         webView.uiDelegate = self
         webView.allowsBackForwardNavigationGestures = true
 
-        // KHÔNG ép customUserAgent ở đây.
-        // Để WebView dùng UA mặc định của iOS trước, tránh server phản ứng lạ.
+        // Đừng ép user-agent lúc này.
+        // Cứ để iOS dùng UA mặc định để tránh server phản ứng lạ.
+        // webView.customUserAgent = ...
 
         webView.isOpaque = false
         webView.backgroundColor = .white
         webView.scrollView.backgroundColor = .white
+        if #available(iOS 15.0, *) {
+            webView.underPageBackgroundColor = .white
+        }
         webView.translatesAutoresizingMaskIntoConstraints = false
 
         webView.addObserver(
