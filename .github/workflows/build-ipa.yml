@@ -17,10 +17,18 @@ jobs:
       - name: Install XcodeGen
         run: brew install xcodegen
 
+      - name: Show files before generate
+        run: |
+          pwd
+          ls -la
+
       - name: Generate project
         run: |
-          rm -rf VTeenWebView.xcodeproj
+          rm -rf *.xcodeproj
           xcodegen generate
+          echo "=== AFTER GENERATE ==="
+          ls -la
+          find . -maxdepth 2 -name "*.xcodeproj" -print
 
       - name: Show Xcode version
         run: xcodebuild -version
@@ -30,8 +38,13 @@ jobs:
           rm -rf build Payload VTeenWebView.ipa DerivedData
           mkdir -p build
 
+          PROJECT_PATH=$(find . -maxdepth 2 -name "*.xcodeproj" | head -n 1)
+
+          echo "=== PROJECT_PATH ==="
+          echo "$PROJECT_PATH"
+
           xcodebuild \
-            -project VTeenWebView.xcodeproj \
+            -project "$PROJECT_PATH" \
             -scheme VTeenWebView \
             -configuration Release \
             -sdk iphoneos \
@@ -46,10 +59,11 @@ jobs:
         run: |
           echo "=== BUILD DIR ==="
           ls -la build || true
-          echo "=== APP CONTENTS ==="
-          ls -la build/VTeenWebViewTEST.app || ls -la build/VTeenWebView.app || true
           echo "=== FIND APP ==="
           find build -name "*.app" -print
+          echo "=== APP CONTENTS ==="
+          APP_PATH=$(find build -name "*.app" | head -n 1)
+          ls -la "$APP_PATH" || true
 
       - name: Create IPA
         run: |
