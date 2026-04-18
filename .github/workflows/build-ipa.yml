@@ -20,26 +20,28 @@ jobs:
       - name: Build app
         run: |
           xcodebuild \
-          -scheme VTeenWebView \
-          -sdk iphoneos \
-          -configuration Release \
-          build \
-          CODE_SIGN_IDENTITY="" \
-          CODE_SIGNING_REQUIRED=NO \
-          CODE_SIGNING_ALLOWED=NO
+            -project VTeenWebView.xcodeproj \
+            -scheme VTeenWebView \
+            -sdk iphoneos \
+            -configuration Release \
+            CONFIGURATION_BUILD_DIR=$PWD/build \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            build
 
-      - name: Find .app
+      - name: Check build output
         run: |
-          echo "=== FIND APP ==="
-          find . -name "*.app"
+          echo "=== BUILD FOLDER ==="
+          ls -la build
 
       - name: Package IPA
         run: |
           mkdir -p Payload
-          APP_PATH=$(find . -name "*.app" | head -n 1)
-          echo "App found at: $APP_PATH"
-          cp -r "$APP_PATH" Payload/
-          zip -r VTeenWebView.ipa Payload
+          cp -R build/VTeenWebView.app Payload/
+          cd Payload
+          zip -r ../VTeenWebView.ipa VTeenWebView.app
+          cd ..
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
