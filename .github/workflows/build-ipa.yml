@@ -2,8 +2,6 @@ name: Build IPA
 
 on:
   workflow_dispatch:
-  push:
-    branches: [ main, master ]
 
 jobs:
   build:
@@ -11,44 +9,33 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v4
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
-      - name: Generate Xcode project
+      - name: Generate project
         run: xcodegen generate
 
-      - name: Show Xcode version
-        run: xcodebuild -version
-
-      - name: Build app for device
+      - name: Build app
         run: |
-          set -eo pipefail
           xcodebuild \
-            -project VTeenWebView.xcodeproj \
-            -scheme VTeenWebView \
-            -configuration Release \
-            -sdk iphoneos \
-            -destination 'generic/platform=iOS' \
-            -derivedDataPath build \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
-            clean build
+          -scheme VTeenWebView \
+          -sdk iphoneos \
+          -configuration Release \
+          -archivePath $PWD/build/VTeenWebView.xcarchive \
+          archive \
+          CODE_SIGN_IDENTITY="" \
+          CODE_SIGNING_REQUIRED=NO \
+          CODE_SIGNING_ALLOWED=NO
 
-      - name: Ad hoc sign app bundle
-        run: |
-          APP_PATH="build/Build/Products/Release-iphoneos/VTeenWebView.app"
-          /usr/bin/codesign --force --deep --sign - "$APP_PATH"
-
-      - name: Package IPA
+      - name: Export IPA
         run: |
           mkdir -p Payload
-          cp -R "build/Build/Products/Release-iphoneos/VTeenWebView.app" Payload/
-          zip -qry VTeenWebView.ipa Payload
+          cp -r build/VTeenWebView.xcarchive/Products/Applications/*.app Payload/
+          zip -r VTeenWebView.ipa Payload
 
-      - name: Upload IPA artifact
+      - name: Upload IPA
         uses: actions/upload-artifact@v4
         with:
           name: VTeenWebView-ipa
