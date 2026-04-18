@@ -1,36 +1,19 @@
 import UIKit
 import WebKit
 
-final class ViewController: UIViewController {
-
-    private let initialURL = URL(string: "https://vteen.io.vn/")!
+final class ViewController: UIViewController, WKNavigationDelegate, WKUIDelegate {
 
     private var webView: WKWebView!
-    private let progressView = UIProgressView(progressViewStyle: .default)
+    private let urlString = "https://vteen.io.vn/"
 
-    private let fallbackView = UIView()
-    private let messageLabel = UILabel()
-    private let retryButton = UIButton(type: .system)
+    private let topBar = UIStackView()
+    private let statusLabel = UILabel()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-
-        title = "VTeennew"
         view.backgroundColor = .white
+        title = "VTeen Debug"
 
-        setupWebView()
-        setupUI()
-        loadInitialPage()
-    }
-
-    deinit {
-        webView?.removeObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress)
-        )
-    }
-
-    private func setupWebView() {
         let config = WKWebViewConfiguration()
         config.defaultWebpagePreferences.allowsContentJavaScript = true
         config.allowsInlineMediaPlayback = true
@@ -39,216 +22,143 @@ final class ViewController: UIViewController {
         webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = self
         webView.uiDelegate = self
-        webView.allowsBackForwardNavigationGestures = true
-
-        // Đừng ép user-agent lúc này.
-        // Cứ để iOS dùng UA mặc định để tránh server phản ứng lạ.
-        // webView.customUserAgent = ...
-
+        webView.translatesAutoresizingMaskIntoConstraints = false
         webView.isOpaque = false
         webView.backgroundColor = .white
         webView.scrollView.backgroundColor = .white
         if #available(iOS 15.0, *) {
             webView.underPageBackgroundColor = .white
         }
-        webView.translatesAutoresizingMaskIntoConstraints = false
 
-        webView.addObserver(
-            self,
-            forKeyPath: #keyPath(WKWebView.estimatedProgress),
-            options: .new,
-            context: nil
-        )
-    }
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
+        statusLabel.text = "App opened"
+        statusLabel.textColor = .black
+        statusLabel.font = .systemFont(ofSize: 14)
+        statusLabel.numberOfLines = 0
 
-    private func setupUI() {
-        progressView.translatesAutoresizingMaskIntoConstraints = false
-        progressView.progress = 0
-        progressView.isHidden = true
+        topBar.axis = .horizontal
+        topBar.spacing = 8
+        topBar.distribution = .fillEqually
+        topBar.translatesAutoresizingMaskIntoConstraints = false
 
-        fallbackView.translatesAutoresizingMaskIntoConstraints = false
-        fallbackView.backgroundColor = .white
-        fallbackView.isHidden = true
+        let localBtn = makeButton("Test Local", action: #selector(loadLocalHTML))
+        let siteBtn = makeButton("Open Site", action: #selector(loadSite))
+        let clearBtn = makeButton("Clear Cache", action: #selector(clearCache))
 
-        messageLabel.translatesAutoresizingMaskIntoConstraints = false
-        messageLabel.textAlignment = .center
-        messageLabel.numberOfLines = 0
-        messageLabel.textColor = .black
-        messageLabel.font = .systemFont(ofSize: 16)
+        topBar.addArrangedSubview(localBtn)
+        topBar.addArrangedSubview(siteBtn)
+        topBar.addArrangedSubview(clearBtn)
 
-        retryButton.translatesAutoresizingMaskIntoConstraints = false
-        retryButton.setTitle("Tải lại", for: .normal)
-        retryButton.addTarget(self, action: #selector(retryLoad), for: .touchUpInside)
-
-        view.addSubview(progressView)
+        view.addSubview(topBar)
+        view.addSubview(statusLabel)
         view.addSubview(webView)
-        view.addSubview(fallbackView)
-
-        fallbackView.addSubview(messageLabel)
-        fallbackView.addSubview(retryButton)
 
         NSLayoutConstraint.activate([
-            progressView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            progressView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            progressView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            topBar.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor, constant: 8),
+            topBar.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            topBar.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+            topBar.heightAnchor.constraint(equalToConstant: 44),
 
-            webView.topAnchor.constraint(equalTo: progressView.bottomAnchor),
+            statusLabel.topAnchor.constraint(equalTo: topBar.bottomAnchor, constant: 8),
+            statusLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 12),
+            statusLabel.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -12),
+
+            webView.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 8),
             webView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             webView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            fallbackView.topAnchor.constraint(equalTo: progressView.bottomAnchor),
-            fallbackView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            fallbackView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            fallbackView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-
-            messageLabel.centerXAnchor.constraint(equalTo: fallbackView.centerXAnchor),
-            messageLabel.centerYAnchor.constraint(equalTo: fallbackView.centerYAnchor, constant: -20),
-            messageLabel.leadingAnchor.constraint(equalTo: fallbackView.leadingAnchor, constant: 24),
-            messageLabel.trailingAnchor.constraint(equalTo: fallbackView.trailingAnchor, constant: -24),
-
-            retryButton.topAnchor.constraint(equalTo: messageLabel.bottomAnchor, constant: 16),
-            retryButton.centerXAnchor.constraint(equalTo: fallbackView.centerXAnchor)
+            webView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
         ])
 
-        navigationItem.leftBarButtonItem = UIBarButtonItem(
-            title: "Back",
-            style: .plain,
-            target: self,
-            action: #selector(goBack)
-        )
-
-        navigationItem.rightBarButtonItem = UIBarButtonItem(
-            barButtonSystemItem: .refresh,
-            target: self,
-            action: #selector(refreshPage)
-        )
-
-        navigationItem.leftBarButtonItem?.isEnabled = false
+        loadLocalHTML()
     }
 
-    private func loadInitialPage() {
-        hideFallback()
+    private func makeButton(_ title: String, action: Selector) -> UIButton {
+        let btn = UIButton(type: .system)
+        btn.setTitle(title, for: .normal)
+        btn.backgroundColor = .systemBlue
+        btn.setTitleColor(.white, for: .normal)
+        btn.layer.cornerRadius = 10
+        btn.addTarget(self, action: action, for: .touchUpInside)
+        return btn
+    }
 
+    @objc private func loadLocalHTML() {
+        statusLabel.text = "Loading local HTML..."
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: -apple-system; background: #ffffff; color: #111111; padding: 24px; }
+            .box { background: #f3f4f6; padding: 20px; border-radius: 16px; }
+            h1 { margin: 0 0 12px 0; color: #2563eb; }
+          </style>
+        </head>
+        <body>
+          <div class="box">
+            <h1>WKWebView OK</h1>
+            <p>Nếu bạn thấy màn này thì app và ViewController đang chạy đúng.</p>
+            <p>Bấm <b>Open Site</b> để thử mở vteen.io.vn.</p>
+          </div>
+        </body>
+        </html>
+        """
+        webView.loadHTMLString(html, baseURL: nil)
+    }
+
+    @objc private func loadSite() {
+        guard let url = URL(string: urlString) else {
+            statusLabel.text = "URL invalid"
+            return
+        }
+
+        statusLabel.text = "Loading site: \(urlString)"
         let request = URLRequest(
-            url: initialURL,
-            cachePolicy: .useProtocolCachePolicy,
+            url: url,
+            cachePolicy: .reloadIgnoringLocalCacheData,
             timeoutInterval: 60
         )
-
         webView.load(request)
     }
 
-    @objc private func goBack() {
-        if webView.canGoBack {
-            webView.goBack()
+    @objc private func clearCache() {
+        let types = WKWebsiteDataStore.allWebsiteDataTypes()
+        WKWebsiteDataStore.default().removeData(
+            ofTypes: types,
+            modifiedSince: Date(timeIntervalSince1970: 0)
+        ) { [weak self] in
+            self?.statusLabel.text = "Cache cleared"
         }
-        navigationItem.leftBarButtonItem?.isEnabled = webView.canGoBack
     }
-
-    @objc private func refreshPage() {
-        hideFallback()
-        webView.reload()
-    }
-
-    @objc private func retryLoad() {
-        loadInitialPage()
-    }
-
-    private func showFallback(message: String) {
-        messageLabel.text = message
-        fallbackView.isHidden = false
-        progressView.isHidden = true
-    }
-
-    private func hideFallback() {
-        fallbackView.isHidden = true
-    }
-
-    override func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey: Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        guard keyPath == #keyPath(WKWebView.estimatedProgress) else { return }
-
-        let progress = Float(webView.estimatedProgress)
-        progressView.setProgress(progress, animated: true)
-        progressView.isHidden = progress >= 1.0
-    }
-}
-
-extension ViewController: WKNavigationDelegate {
 
     func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-        hideFallback()
-        progressView.isHidden = false
+        statusLabel.text = "didStartProvisionalNavigation"
+    }
+
+    func webView(_ webView: WKWebView, didCommit navigation: WKNavigation!) {
+        statusLabel.text = "didCommit"
     }
 
     func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-        title = webView.title ?? "VTeen"
-        navigationItem.leftBarButtonItem?.isEnabled = webView.canGoBack
-        progressView.isHidden = true
+        statusLabel.text = "didFinish: \(webView.url?.absoluteString ?? "no url")"
+        title = webView.title ?? "Loaded"
     }
 
-    func webView(
-        _ webView: WKWebView,
-        didFailProvisionalNavigation navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        showFallback(message: "Không tải được trang.\n\(error.localizedDescription)")
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        statusLabel.text = "didFailProvisionalNavigation: \(error.localizedDescription)"
+        showErrorPage("didFailProvisionalNavigation", error: error)
     }
 
-    func webView(
-        _ webView: WKWebView,
-        didFail navigation: WKNavigation!,
-        withError error: Error
-    ) {
-        showFallback(message: "Trang tải thất bại.\n\(error.localizedDescription)")
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        statusLabel.text = "didFail: \(error.localizedDescription)"
+        showErrorPage("didFail", error: error)
     }
 
     func webViewWebContentProcessDidTerminate(_ webView: WKWebView) {
-        webView.reload()
+        statusLabel.text = "WebContent process terminated"
+        showSimpleHTML(title: "Process terminated", message: "WKWebView process bị terminate.")
     }
-
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationAction: WKNavigationAction,
-        decisionHandler: @escaping (WKNavigationActionPolicy) -> Void
-    ) {
-        guard let url = navigationAction.request.url else {
-            decisionHandler(.cancel)
-            return
-        }
-
-        if let scheme = url.scheme?.lowercased(),
-           ["tel", "mailto", "sms"].contains(scheme) {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
-            decisionHandler(.cancel)
-            return
-        }
-
-        decisionHandler(.allow)
-    }
-
-    func webView(
-        _ webView: WKWebView,
-        decidePolicyFor navigationResponse: WKNavigationResponse,
-        decisionHandler: @escaping (WKNavigationResponsePolicy) -> Void
-    ) {
-        if let httpResponse = navigationResponse.response as? HTTPURLResponse,
-           httpResponse.statusCode >= 400 {
-            showFallback(message: "Máy chủ trả về lỗi \(httpResponse.statusCode).")
-            decisionHandler(.cancel)
-            return
-        }
-
-        decisionHandler(.allow)
-    }
-}
-
-extension ViewController: WKUIDelegate {
 
     func webView(
         _ webView: WKWebView,
@@ -260,5 +170,51 @@ extension ViewController: WKUIDelegate {
             webView.load(navigationAction.request)
         }
         return nil
+    }
+
+    private func showErrorPage(_ stage: String, error: Error) {
+        let nsError = error as NSError
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: -apple-system; background: #fff; color: #111; padding: 24px; }
+            .box { background: #fee2e2; border-radius: 16px; padding: 20px; }
+            h2 { color: #b91c1c; margin-top: 0; }
+            code { word-break: break-word; display: block; margin-top: 8px; }
+          </style>
+        </head>
+        <body>
+          <div class="box">
+            <h2>\(stage)</h2>
+            <p>\(nsError.localizedDescription)</p>
+            <code>domain: \(nsError.domain)</code>
+            <code>code: \(nsError.code)</code>
+          </div>
+        </body>
+        </html>
+        """
+        webView.loadHTMLString(html, baseURL: nil)
+    }
+
+    private func showSimpleHTML(title: String, message: String) {
+        let html = """
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body { font-family: -apple-system; background: #fff; color: #111; padding: 24px; }
+          </style>
+        </head>
+        <body>
+          <h2>\(title)</h2>
+          <p>\(message)</p>
+        </body>
+        </html>
+        """
+        webView.loadHTMLString(html, baseURL: nil)
     }
 }
