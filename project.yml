@@ -1,4 +1,4 @@
-name: VTeenWebViewTEST
+name: VTeenWebView
 
 options:
   xcodeVersion: "14.0"
@@ -8,7 +8,7 @@ options:
 settings:
   base:
     PRODUCT_BUNDLE_IDENTIFIER: com.quyenhan13.vteenwebviewtest
-    PRODUCT_NAME: VTeenWebViewTEST
+    PRODUCT_NAME: VTeenWebView
     CURRENT_PROJECT_VERSION: 999
     MARKETING_VERSION: 9.9.9
     DEVELOPMENT_TEAM: ""
@@ -29,7 +29,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.quyenhan13.vteenwebviewtest
-        PRODUCT_NAME: VTeenWebViewTEST
+        PRODUCT_NAME: VTeenWebView
         INFOPLIST_FILE: VTeenWebView/Info.plist
         GENERATE_INFOPLIST_FILE: NO
         CURRENT_PROJECT_VERSION: 999
@@ -38,5 +38,3 @@ targets:
         CODE_SIGN_IDENTITY: ""
         DEVELOPMENT_TEAM: ""
         ENABLE_BITCODE: NO
-    scheme:
-      testTargets: []
