@@ -15,7 +15,7 @@ final class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        title = "VTeen"
+        title = "VTeennew"
         view.backgroundColor = .white
 
         setupWebView()
