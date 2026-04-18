@@ -23,16 +23,22 @@ jobs:
           -scheme VTeenWebView \
           -sdk iphoneos \
           -configuration Release \
-          -archivePath $PWD/build/VTeenWebView.xcarchive \
-          archive \
+          build \
           CODE_SIGN_IDENTITY="" \
           CODE_SIGNING_REQUIRED=NO \
           CODE_SIGNING_ALLOWED=NO
 
-      - name: Export IPA
+      - name: Find .app
+        run: |
+          echo "=== FIND APP ==="
+          find . -name "*.app"
+
+      - name: Package IPA
         run: |
           mkdir -p Payload
-          cp -r build/VTeenWebView.xcarchive/Products/Applications/*.app Payload/
+          APP_PATH=$(find . -name "*.app" | head -n 1)
+          echo "App found at: $APP_PATH"
+          cp -r "$APP_PATH" Payload/
           zip -r VTeenWebView.ipa Payload
 
       - name: Upload IPA
