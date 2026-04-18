@@ -1,30 +1,42 @@
-name: VTeenWebView
+name: VTeenWebViewTEST
+
 options:
-  bundleIdPrefix: vn.vteen
+  xcodeVersion: "14.0"
   deploymentTarget:
-    iOS: '15.0'
+    iOS: "15.0"
+
 settings:
   base:
-    PRODUCT_BUNDLE_IDENTIFIER: vn.vteen.webview
-    PRODUCT_NAME: VTeenWebView
+    PRODUCT_BUNDLE_IDENTIFIER: com.quyenhan13.vteenwebviewtest
+    PRODUCT_NAME: VTeenWebViewTEST
     CURRENT_PROJECT_VERSION: 999
     MARKETING_VERSION: 9.9.9
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: ""
+    ENABLE_BITCODE: NO
     SWIFT_VERSION: 5.0
-    IPHONEOS_DEPLOYMENT_TARGET: 15.0
-    GENERATE_INFOPLIST_FILE: NO
+    TARGETED_DEVICE_FAMILY: "1,2"
+    INFOPLIST_FILE: VTeenWebView/Info.plist
+
 targets:
   VTeenWebView:
     type: application
     platform: iOS
+    deploymentTarget: "15.0"
     sources:
-      - VTeenWebView
-    info:
-      path: VTeenWebView/Info.plist
+      - path: VTeenWebView
     settings:
       base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.quyenhan13.vteenwebviewtest
+        PRODUCT_NAME: VTeenWebViewTEST
         INFOPLIST_FILE: VTeenWebView/Info.plist
-        CODE_SIGN_STYLE: Automatic
-        DEVELOPMENT_TEAM: ''
-    preBuildScripts: []
+        GENERATE_INFOPLIST_FILE: NO
+        CURRENT_PROJECT_VERSION: 999
+        MARKETING_VERSION: 9.9.9
+        CODE_SIGN_STYLE: Manual
+        CODE_SIGN_IDENTITY: ""
+        DEVELOPMENT_TEAM: ""
+        ENABLE_BITCODE: NO
     scheme:
       testTargets: []
