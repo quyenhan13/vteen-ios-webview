@@ -1,50 +1,33 @@
-name: Build IPA
+name: Build IPA (Stable)
 
 on:
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
-    runs-on: macos-13
+    runs-on: macos-14
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Install XcodeGen
         run: brew install xcodegen
-
-      - name: Show files before generate
-        run: |
-          pwd
-          ls -la
 
       - name: Generate project
         run: |
           rm -rf *.xcodeproj
           xcodegen generate
-          echo "=== AFTER GENERATE ==="
-          ls -la
-          find . -maxdepth 2 -name "*.xcodeproj" -print
 
       - name: Show Xcode version
         run: xcodebuild -version
 
-      - name: Build app to local build dir
+      - name: Build app
         run: |
-          rm -rf build Payload VTeenWebView.ipa DerivedData
+          rm -rf build DerivedData Payload *.ipa
           mkdir -p build
 
-          PROJECT_PATH=$(find . -maxdepth 2 -name "*.xcodeproj" | head -n 1)
-
-          echo "=== PROJECT_PATH ==="
-          echo "$PROJECT_PATH"
-
           xcodebuild \
-            -project "$PROJECT_PATH" \
+            -project $(find . -name "*.xcodeproj" | head -n 1) \
             -scheme VTeenWebView \
             -configuration Release \
             -sdk iphoneos \
@@ -52,36 +35,26 @@ jobs:
             CONFIGURATION_BUILD_DIR=$PWD/build \
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGN_IDENTITY="" \
             clean build
 
-      - name: Inspect built app
+      - name: Create IPA chuẩn Apple
         run: |
-          echo "=== BUILD DIR ==="
-          ls -la build || true
-          echo "=== FIND APP ==="
-          find build -name "*.app" -print
-          echo "=== APP CONTENTS ==="
-          APP_PATH=$(find build -name "*.app" | head -n 1)
-          ls -la "$APP_PATH" || true
+          APP=$(find build -name "*.app" | head -n 1)
 
-      - name: Create IPA
-        run: |
-          mkdir -p Payload
-          APP_PATH=$(find build -name "*.app" | head -n 1)
-          cp -R "$APP_PATH" Payload/
-          /usr/bin/zip -r VTeenWebView.ipa Payload
+          mkdir Payload
+          cp -R "$APP" Payload/
 
-      - name: Verify IPA
+          ditto -c -k --sequesterRsrc --keepParent Payload VTeenWebView.ipa
+
+      - name: Check IPA
         run: |
-          echo "=== IPA SIZE ==="
+          echo "=== SIZE ==="
           ls -lh VTeenWebView.ipa
-          du -h VTeenWebView.ipa
-          echo "=== IPA CONTENTS ==="
-          unzip -l VTeenWebView.ipa | sed -n '1,120p'
+          echo "=== CONTENT ==="
+          unzip -l VTeenWebView.ipa | head -n 40
 
-      - name: Upload IPA
+      - name: Upload
         uses: actions/upload-artifact@v4
         with:
-          name: VTeenWebView-ipa
+          name: IPA
           path: VTeenWebView.ipa
