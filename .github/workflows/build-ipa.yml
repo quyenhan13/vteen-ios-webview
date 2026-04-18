@@ -1,0 +1,55 @@
+name: Build IPA
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Show Xcode version
+        run: xcodebuild -version
+
+      - name: Build app for device
+        run: |
+          set -eo pipefail
+          xcodebuild \
+            -project VTeenWebView.xcodeproj \
+            -scheme VTeenWebView \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            clean build
+
+      - name: Ad hoc sign app bundle
+        run: |
+          APP_PATH="build/Build/Products/Release-iphoneos/VTeenWebView.app"
+          /usr/bin/codesign --force --deep --sign - "$APP_PATH"
+
+      - name: Package IPA
+        run: |
+          mkdir -p Payload
+          cp -R "build/Build/Products/Release-iphoneos/VTeenWebView.app" Payload/
+          zip -qry VTeenWebView.ipa Payload
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: VTeenWebView-ipa
+          path: VTeenWebView.ipa
