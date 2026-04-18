@@ -3,6 +3,9 @@ name: Build IPA
 on:
   workflow_dispatch:
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   build:
     runs-on: macos-latest
@@ -34,14 +37,17 @@ jobs:
         run: |
           echo "=== BUILD FOLDER ==="
           ls -la build
+          find build -maxdepth 2 -name "*.app" -print
 
       - name: Package IPA
         run: |
           mkdir -p Payload
           cp -R build/VTeenWebView.app Payload/
-          cd Payload
-          zip -r ../VTeenWebView.ipa VTeenWebView.app
-          cd ..
+          zip -r VTeenWebView.ipa Payload
+
+      - name: Check IPA size
+        run: |
+          ls -lh VTeenWebView.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
