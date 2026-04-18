@@ -3,9 +3,6 @@ name: Build IPA
 on:
   workflow_dispatch:
 
-env:
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
 jobs:
   build:
     runs-on: macos-latest
@@ -27,48 +24,25 @@ jobs:
             -scheme VTeenWebView \
             -sdk iphoneos \
             -configuration Release \
-            CONFIGURATION_BUILD_DIR="$PWD/build" \
+            CONFIGURATION_BUILD_DIR=$PWD/build \
             CODE_SIGN_IDENTITY="" \
             CODE_SIGNING_REQUIRED=NO \
             CODE_SIGNING_ALLOWED=NO \
             build
 
-      - name: Check build output
+      - name: Package IPA (FINAL)
         run: |
-          echo "=== BUILD FOLDER ==="
-          ls -la build
-          echo "=== APP FILE ==="
-          find build -name "*.app" -print
-          echo "=== APP CONTENT ==="
-          ls -la build/VTeenWebView.app || true
+          rm -rf Payload VTeenWebView.ipa
+          mkdir Payload
+          cp -R build/VTeenWebView.app Payload/
 
-      - name: Package IPA
-        run: |
-          echo "=== START PACKAGE ==="
-          rm -rf Payload VTeenWebView.ipa ipa_root
-          mkdir -p ipa_root/Payload
-
-          echo "=== COPY APP ==="
-          cp -R build/VTeenWebView.app ipa_root/Payload/
-
-          echo "=== CHECK PAYLOAD ==="
-          ls -la ipa_root/Payload
-          ls -la ipa_root/Payload/VTeenWebView.app || true
-
-          echo "=== CREATE IPA ==="
-          cd ipa_root
-          /usr/bin/zip -qry ../VTeenWebView.ipa Payload
-          cd ..
-
-          echo "=== IPA FILE ==="
-          ls -lh VTeenWebView.ipa
-          /usr/bin/unzip -l VTeenWebView.ipa | head -n 50
+          # dùng ditto chuẩn Apple (QUAN TRỌNG)
+          ditto -c -k --sequesterRsrc --keepParent Payload VTeenWebView.ipa
 
       - name: Check IPA size
         run: |
           echo "=== IPA SIZE ==="
           ls -lh VTeenWebView.ipa
-          du -h VTeenWebView.ipa
 
       - name: Upload IPA
         uses: actions/upload-artifact@v4
