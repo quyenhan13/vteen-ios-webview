@@ -1,0 +1,30 @@
+name: VTeenWebView
+options:
+  bundleIdPrefix: vn.vteen
+  deploymentTarget:
+    iOS: '15.0'
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: vn.vteen.webview
+    PRODUCT_NAME: VTeenWebView
+    CURRENT_PROJECT_VERSION: 1
+    MARKETING_VERSION: 1.0.0
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: 15.0
+    GENERATE_INFOPLIST_FILE: NO
+targets:
+  VTeenWebView:
+    type: application
+    platform: iOS
+    sources:
+      - VTeenWebView
+    info:
+      path: VTeenWebView/Info.plist
+    settings:
+      base:
+        INFOPLIST_FILE: VTeenWebView/Info.plist
+        CODE_SIGN_STYLE: Automatic
+        DEVELOPMENT_TEAM: ''
+    preBuildScripts: []
+    scheme:
+      testTargets: []
